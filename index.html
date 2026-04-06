@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>晚餐人數統計</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f8f9fa; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { color: #333; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { 
+            width: 100%; padding: 12px; background-color: #00b900; color: white; 
+            border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold;
+        }
+        button:disabled { background-color: #ccc; }
+        #status { font-size: 12px; color: #666; text-align: center; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🍴 晚餐要來幾位？</h2>
+    
+    <div class="form-group">
+        <label for="userName">您的稱呼</label>
+        <input type="text" id="userName" placeholder="例如：王小明">
+    </div>
+
+    <div class="form-group">
+        <label for="count">參加人數</label>
+        <select id="count">
+            <option value="1">1 位 (準時報到)</option>
+            <option value="2">2 位</option>
+            <option value="3">3 位</option>
+            <option value="4">4 位</option>
+            <option value="5">5 位以上</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="note">備註 (選填)</label>
+        <input type="text" id="note" placeholder="例如：不吃香菜 / 會晚點到">
+    </div>
+
+    <button id="submitBtn" disabled>讀取中...</button>
+    <div id="status">正在初始化 LINE 環境...</div>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+    const liffId = 'YOUR_LIFF_ID'; // 💡 請替換成你在 LINE Developers 後台申請的 LIFF ID
+
+    async function initLiff() {
+        try {
+            await liff.init({ liffId });
+            if (!liff.isLoggedIn()) {
+                liff.login();
+            } else {
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').innerText = '確認送出';
+                document.getElementById('status').innerText = 'LIFF 已就緒';
+            }
+        } catch (err) {
+            document.getElementById('status').innerText = '初始化失敗: ' + err.message;
+        }
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+        const name = document.getElementById('userName').value.trim();
+        const count = document.getElementById('count').value;
+        const note = document.getElementById('note').value.trim() || '無';
+
+        if (!name) {
+            alert('請輸入您的稱呼');
+            return;
+        }
+
+        const message = `🍴 【晚餐報名統計】\n👤 姓名：${name}\n👥 人數：${count} 位\n📝 備註：${note}`;
+
+        // 發送訊息回聊天室
+        if (liff.isInClient()) {
+            try {
+                await liff.sendMessages([{
+                    type: 'text',
+                    text: message
+                }]);
+                liff.closeWindow(); // 發送後自動關閉視窗
+            } catch (err) {
+                alert('訊息發送失敗: ' + err);
+            }
+        } else {
+            // 如果是在外部瀏覽器打開
+            alert('請在 LINE App 內使用此功能。\n\n預覽訊息：\n' + message);
+        }
+    });
+
+    initLiff();
+</script>
+
+</body>
+</html>
