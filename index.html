@@ -49,7 +49,7 @@
         let userProfile = null;
 
         async function init() {
-            await liff.init({ liffId: "你的_LIFF_ID" });
+            await liff.init({ liffId: "2009708563-KU82gYtl" });
             if (!liff.isLoggedIn()) { liff.login(); return; }
             userProfile = await liff.getProfile();
             fetchData();
