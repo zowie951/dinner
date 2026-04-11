@@ -1,110 +1,119 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>晚餐人數統計</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f4; padding: 15px; margin: 0; }
+    .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
+    .tag { display: inline-block; background: #00b900; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+    .res-name { font-size: 20px; font-weight: bold; margin: 8px 0; }
+    .info-item { font-size: 14px; color: #666; margin: 4px 0; }
+    .attendance-list { border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px; }
+    .user-row { display: flex; justify-content: space-between; padding: 5px 0; }
+    .controls { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px; display: flex; gap: 8px; box-sizing: border-box; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+    button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .btn-plus { background: #00b900; color: white; }
+    .btn-minus { background: #ff4d4d; color: white; }
+    button:disabled { background: #ccc; }
+    #loading { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:100; justify-content:center; align-items:center; flex-direction:column; }
+  </style>
 </head>
-<body class="bg-slate-50 p-4">
-    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
-        <div class="bg-indigo-600 p-6 text-center text-white">
-            <p class="text-sm opacity-80 uppercase tracking-widest">目前統計人數</p>
-            <h1 id="totalDisplay" class="text-5xl font-bold mt-1">0</h1>
-        </div>
+<body>
 
-        <div class="p-6 space-y-6">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">📍 選擇今日餐廳</label>
-                <div class="flex gap-2">
-                    <select id="resSelect" class="flex-1 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"></select>
-                    <button onclick="addNewRes()" class="bg-gray-100 px-3 rounded-lg text-gray-600 hover:bg-gray-200">+</button>
-                </div>
-            </div>
+<div id="loading"><div>處理中...</div></div>
 
-            <div class="space-y-3">
-                <label class="block text-sm font-medium text-gray-700">➕ 新增人數</label>
-                <div class="grid grid-cols-4 gap-2">
-                    <button onclick="sendData(1)" class="bg-indigo-50 text-indigo-700 font-bold py-3 rounded-xl border border-indigo-100 hover:bg-indigo-100">+1</button>
-                    <button onclick="sendData(2)" class="bg-indigo-50 text-indigo-700 font-bold py-3 rounded-xl border border-indigo-100 hover:bg-indigo-100">+2</button>
-                    <button onclick="sendData(3)" class="bg-indigo-50 text-indigo-700 font-bold py-3 rounded-xl border border-indigo-100 hover:bg-indigo-100">+3</button>
-                    <button onclick="sendData(4)" class="bg-indigo-50 text-indigo-700 font-bold py-3 rounded-xl border border-indigo-100 hover:bg-indigo-100">+4</button>
-                </div>
-                <button onclick="customAdd()" class="w-full bg-white text-gray-600 py-2 rounded-lg border border-dashed border-gray-300 hover:border-indigo-400">客製化人數...</button>
-            </div>
+<div class="card" id="restaurant-card">
+  <span class="tag" id="res-category">-</span>
+  <div class="res-name" id="res-name">讀取中...</div>
+  <div class="info-item">📞 <span id="res-phone">-</span></div>
+  <div class="info-item">📍 <span id="res-address">-</span></div>
+  <div class="info-item">🅿️ <span id="res-parking">-</span></div>
+  <div class="info-item">📝 <span id="res-note">-</span></div>
+</div>
 
-            <hr class="border-gray-100">
+<div class="card">
+  <div style="font-weight:bold; margin-bottom:10px;">目前參加人數：<span id="total-count">0</span> 人</div>
+  <div id="member-list" class="attendance-list"></div>
+</div>
 
-            <button onclick="cancelAll()" class="w-full py-3 bg-red-50 text-red-600 font-medium rounded-xl hover:bg-red-100 transition">
-                🚫 撤銷我的所有報名
-            </button>
-        </div>
-    </div>
+<div style="height: 80px;"></div> <div class="controls">
+  <button class="btn-plus" onclick="update(-1)">-1</button>
+  <button class="btn-plus" onclick="update(1)">+1</button>
+  <button class="btn-plus" onclick="update(2)">+2</button>
+  <button class="btn-plus" onclick="customUpdate()">自訂</button>
+</div>
 
-    <p id="status" class="text-center text-xs text-gray-400 mt-4 italic">正在連線...</p>
+<script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzSJ871E0HiBwb7Ses7j0yUdnM8A8f5ToBPJc5GGDTpbejuXz_n88mTp4qd63gHe_3xGg/exec";
 
-    <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxRzWAY4qbq_51OYThgBp4h0aYga8H0-297Q1bGDnl8IIYSrZHHW52hhBn_ZrRGzY-hYA/exec';
-        let userProfile = null;
+  async function init() {
+    await liff.init({ liffId: "2009708563-KU82gYtl" });
+    if (!liff.isLoggedIn()) {
+      liff.login();
+    } else {
+      fetchData();
+    }
+  }
 
-        async function init() {
-            await liff.init({ liffId: "2009708563-KU82gYtl" });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
-            userProfile = await liff.getProfile();
-            fetchData();
-        }
+  async function fetchData() {
+    toggleLoading(true);
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'get' })
+    });
+    const data = await res.json();
+    render(data);
+    toggleLoading(false);
+  }
 
-        async function fetchData() {
-            const res = await fetch(GAS_URL);
-            const data = await res.json();
-            document.getElementById('totalDisplay').innerText = data.totalCount;
-            const select = document.getElementById('resSelect');
-            select.innerHTML = data.restaurants.map(r => `<option value="${r}">${r}</option>`).join('');
-            document.getElementById('status').innerText = '資料已同步';
-        }
+  async function update(change) {
+    toggleLoading(true);
+    const profile = await liff.getProfile();
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'update',
+        userId: profile.userId,
+        userName: profile.displayName,
+        change: change
+      })
+    });
+    const data = await res.json();
+    render(data);
+    toggleLoading(false);
+  }
 
-        async function sendData(num) {
-            document.getElementById('status').innerText = '儲存中...';
-            await fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                    action: 'addRecord',
-                    userId: userProfile.userId,
-                    userName: userProfile.displayName,
-                    count: num
-                })
-            });
-            fetchData();
-        }
+  function customUpdate() {
+    const num = prompt("請輸入增加的人數 (例如: 5)", "3");
+    if (num && !isNaN(num)) update(parseInt(num));
+  }
 
-        function customAdd() {
-            const n = prompt("請輸入人數：");
-            if (n && !isNaN(n)) sendData(parseInt(n));
-        }
+  function render(data) {
+    document.getElementById('res-category').innerText = data.restaurant.category;
+    document.getElementById('res-name').innerText = data.restaurant.name;
+    document.getElementById('res-phone').innerText = data.restaurant.phone;
+    document.getElementById('res-address').innerText = data.restaurant.address;
+    document.getElementById('res-parking').innerText = data.restaurant.parking;
+    document.getElementById('res-note').innerText = data.restaurant.note;
+    document.getElementById('total-count').innerText = data.total;
 
-        async function cancelAll() {
-            if (!confirm("確定要取消您的所有報名嗎？")) return;
-            document.getElementById('status').innerText = '正在撤銷...';
-            await fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'cancelRecord', userId: userProfile.userId })
-            });
-            fetchData();
-        }
+    const listHtml = data.list.map(m => `
+      <div class="user-row">
+        <span>${m.name}</span>
+        <span>+${m.count}</span>
+      </div>
+    `).join('');
+    document.getElementById('member-list').innerHTML = listHtml || '目前尚無人參加';
+  }
 
-        async function addNewRes() {
-            const name = prompt("請輸入新餐廳名稱：");
-            if (name) {
-                await fetch(GAS_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'addRestaurant', restaurantName: name })
-                });
-                fetchData();
-            }
-        }
+  function toggleLoading(show) {
+    document.getElementById('loading').style.display = show ? 'flex' : 'none';
+    const btns = document.querySelectorAll('button');
+    btns.forEach(b => b.disabled = show);
+  }
 
-        init();
-    </script>
+  init();
+</script>
 </body>
 </html>
