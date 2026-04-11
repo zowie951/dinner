@@ -11,6 +11,7 @@
             --danger-color: #ff4d4d;
             --admin-color: #5856d6;
             --bg-color: #f2f2f7;
+            --link-color: #007aff; /* 增加連結顏色 */
         }
 
         body { 
@@ -41,7 +42,17 @@
         .res-name { font-size: 24px; font-weight: bold; margin: 8px 0; color: #1c1c1e; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 13px; color: #8e8e93; }
 
-        /* 換餐廳工具 - 預設隱藏 */
+        /* 電話連結樣式 */
+        #res-phone-link {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        #res-phone-link:active {
+            opacity: 0.6;
+        }
+
+        /* 換餐廳工具 */
         .admin-box {
             margin-top: 15px; padding: 12px; border: 1.5px dashed var(--admin-color);
             border-radius: 12px; background: #f4f4ff;
@@ -86,7 +97,7 @@
     <span class="tag" id="res-category">分類</span>
     <div class="res-name" id="res-name">讀取餐廳資訊...</div>
     <div class="info-grid">
-        <div>📞 <span id="res-phone">-</span></div>
+        <div>📞 <a id="res-phone-link" href="tel:">等待資料...</a></div>
         <div>🅿️ <span id="res-parking">-</span></div>
         <div style="grid-column: span 2;">📍 <span id="res-address">-</span></div>
         <div style="grid-column: span 2;">📝 <span id="res-note">-</span></div>
@@ -126,12 +137,10 @@
 </div>
 
 <script>
-    // --- 重要設定 ---
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzNKlIQYZLPFsiV75JFDY_JXygcR2tX7mAc_W0bLAQzPjxTRfi03PV0Is5R4W1a-Cyp9g/exec"; 
     const LIFF_ID = "2009708563-KU82gYtl"; 
     
-    // --- 管理員名單 (請在陣列中填入指定的 LINE 顯示名稱) ---
-    const ADMIN_NAMES = ["你的名稱", "管理者B", "Gemini"]; 
+    const ADMIN_IDS = ["U7bbf3916b86cf7152c595c59f8023606", "U3b6ec237de61df228137f8005aa225e7"];
 
     let currentSign = 1;
 
@@ -148,14 +157,13 @@
 
     async function fetchData() {
         toggleLoading(true);
-        
-        // 檢查權限
         try {
             const profile = await liff.getProfile();
-            if (ADMIN_NAMES.includes(profile.displayName)) {
+            if (ADMIN_IDS.includes(profile.userId)) {
                 document.getElementById('admin-box').style.display = 'block';
             }
-        } catch (err) { console.warn("無法取得個人檔案進行權限檢查"); }
+            
+        } catch (err) { console.warn("無法驗證管理員身分"); }
 
         const res = await fetch(GAS_URL, {
             method: 'POST',
@@ -218,13 +226,18 @@
         // 餐廳渲染
         document.getElementById('res-category').innerText = data.restaurant.category;
         document.getElementById('res-name').innerText = data.restaurant.name;
-        document.getElementById('res-phone').innerText = data.restaurant.phone;
+        
+        // 修改處：動態設定電話連結的 href 與文字
+        const phoneEl = document.getElementById('res-phone-link');
+        const phoneNum = data.restaurant.phone || "";
+        phoneEl.innerText = phoneNum || "無電話資訊";
+        phoneEl.href = `tel:${phoneNum.replace(/\s+/g, '')}`; // 移除空格確保撥號正常
+
         document.getElementById('res-address').innerText = data.restaurant.address;
         document.getElementById('res-parking').innerText = data.restaurant.parking;
         document.getElementById('res-note').innerText = data.restaurant.note;
         document.getElementById('total-display').innerText = `${data.total} 人`;
 
-        // 名單渲染
         const listHtml = data.list.map(m => `
             <div class="user-row">
                 <span>${m.name}</span>
@@ -233,12 +246,11 @@
         `).join('');
         document.getElementById('member-list').innerHTML = listHtml || '<div style="text-align:center;color:#ccc;padding:10px;">尚無人參加</div>';
 
-        // 下拉選單渲染 (當清單變動或首次讀取時)
         const selector = document.getElementById('res-selector');
         if (selector.options.length <= 1 && data.allRestaurants) {
             data.allRestaurants.forEach(res => {
                 let opt = document.createElement('option');
-                opt.value = res[1]; // 店名
+                opt.value = res[1];
                 opt.innerText = `[${res[0]}] ${res[1]}`;
                 selector.appendChild(opt);
             });
