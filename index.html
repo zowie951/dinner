@@ -237,6 +237,7 @@
         const addressEl = document.getElementById('res-address-link');
         addressEl.innerText = data.restaurant.address || "無地址資訊";
         // 判斷有無 address_link，若無則不跳轉
+        console.log(data);
         addressEl.href = data.restaurant.address_link || "#";
 
         document.getElementById('res-parking').innerText = data.restaurant.parking;
