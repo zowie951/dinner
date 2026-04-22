@@ -11,7 +11,7 @@
             --danger-color: #ff4d4d;
             --admin-color: #5856d6;
             --bg-color: #f2f2f7;
-            --link-color: #007aff; /* 增加連結顏色 */
+            --link-color: #007aff;
         }
 
         body { 
@@ -42,13 +42,13 @@
         .res-name { font-size: 24px; font-weight: bold; margin: 8px 0; color: #1c1c1e; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 13px; color: #8e8e93; }
 
-        /* 電話連結樣式 */
-        #res-phone-link {
+        /* 連結通用樣式 */
+        .info-link {
             color: var(--link-color);
             text-decoration: none;
             font-weight: 500;
         }
-        #res-phone-link:active {
+        .info-link:active {
             opacity: 0.6;
         }
 
@@ -97,9 +97,9 @@
     <span class="tag" id="res-category">分類</span>
     <div class="res-name" id="res-name">讀取餐廳資訊...</div>
     <div class="info-grid">
-        <div>📞 <a id="res-phone-link" href="tel:">等待資料...</a></div>
+        <div>📞 <a id="res-phone-link" class="info-link" href="tel:">等待資料...</a></div>
         <div>🅿️ <span id="res-parking">-</span></div>
-        <div style="grid-column: span 2;">📍 <span id="res-address">-</span></div>
+        <div style="grid-column: span 2;">📍 <a id="res-address-link" class="info-link" target="_blank" href="#">等待資料...</a></div>
         <div style="grid-column: span 2;">📝 <span id="res-note">-</span></div>
     </div>
 
@@ -227,13 +227,18 @@
         document.getElementById('res-category').innerText = data.restaurant.category;
         document.getElementById('res-name').innerText = data.restaurant.name;
         
-        // 修改處：動態設定電話連結的 href 與文字
+        // 電話連結設定
         const phoneEl = document.getElementById('res-phone-link');
         const phoneNum = data.restaurant.phone || "";
         phoneEl.innerText = phoneNum || "無電話資訊";
-        phoneEl.href = `tel:${phoneNum.replace(/\s+/g, '')}`; // 移除空格確保撥號正常
+        phoneEl.href = `tel:${phoneNum.replace(/\s+/g, '')}`;
 
-        document.getElementById('res-address').innerText = data.restaurant.address;
+        // 修改處：地址連結設定
+        const addressEl = document.getElementById('res-address-link');
+        addressEl.innerText = data.restaurant.address || "無地址資訊";
+        // 判斷有無 address_link，若無則不跳轉
+        addressEl.href = data.restaurant.address_link || "#";
+
         document.getElementById('res-parking').innerText = data.restaurant.parking;
         document.getElementById('res-note').innerText = data.restaurant.note;
         document.getElementById('total-display').innerText = `${data.total} 人`;
