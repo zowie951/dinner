@@ -137,7 +137,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbw0phwWtcwZu2NDaWZuXGxV0zjokQuwUyfEeA2gb2SC2d0oNGxipOa8-bLk1XVe5IHCxQ/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbw2DxWFyUuSfgZMMo2h3H8koBGtQF08q06Lsv-knnkEjjS0icPYhYS54CNKE1sehBe6Pg/exec"; 
     const LIFF_ID = "2009708563-KU82gYtl"; 
     
     const ADMIN_IDS = ["U7bbf3916b86cf7152c595c59f8023606", "U3b6ec237de61df228137f8005aa225e7"];
@@ -237,7 +237,6 @@
         const addressEl = document.getElementById('res-address-link');
         addressEl.innerText = data.restaurant.address || "無地址資訊";
         // 判斷有無 address_link，若無則不跳轉
-        console.log(data);
         addressEl.href = data.restaurant.address_link || "#";
 
         document.getElementById('res-parking').innerText = data.restaurant.parking;
